@@ -26,5 +26,5 @@ GRTAGS
 GPATH
 GTAGS
 docs/book
-sled_test/*
 #*#
+sled_test/bld/*
