@@ -1,6 +1,0 @@
-/root/rat/ob_htap/sled_test/bld/CMakeFiles/sled_test.dir
-/root/rat/ob_htap/sled_test/bld/CMakeFiles/edit_cache.dir
-/root/rat/ob_htap/sled_test/bld/CMakeFiles/rebuild_cache.dir
-/root/rat/ob_htap/sled_test/bld/sled_wrapper_build/CMakeFiles/sled_wrapper.dir
-/root/rat/ob_htap/sled_test/bld/sled_wrapper_build/CMakeFiles/edit_cache.dir
-/root/rat/ob_htap/sled_test/bld/sled_wrapper_build/CMakeFiles/rebuild_cache.dir

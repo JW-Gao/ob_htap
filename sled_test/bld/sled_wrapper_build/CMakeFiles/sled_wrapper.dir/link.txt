@@ -1,2 +1,0 @@
-/usr/bin/ar qc libsled_wrapper.a CMakeFiles/sled_wrapper.dir/sled_db.cpp.o
-/usr/bin/ranlib libsled_wrapper.a
