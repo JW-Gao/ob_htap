@@ -10,3 +10,9 @@
 [submodule "deps/3rd/benchmark"]
 	path = deps/3rd/benchmark
 	url = https://github.com/google/benchmark
+[submodule "deps/third_dels/sled_ffi"]
+	path = deps/third_dels/sled_ffi
+	url = https://github.com/JW-Gao/sled_ffi.git
+[submodule "deps/third_dels/sled"]
+	path = deps/third_dels/sled
+	url = https://github.com/JW-Gao/sled_htap.git
