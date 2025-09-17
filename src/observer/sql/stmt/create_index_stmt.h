@@ -1,0 +1,80 @@
+/* Copyright (c) 2021 OceanBase and/or its affiliates. All rights reserved.
+miniob is licensed under Mulan PSL v2.
+You can use this software according to the terms and conditions of the Mulan PSL v2.
+You may obtain a copy of Mulan PSL v2 at:
+         http://license.coscl.org.cn/MulanPSL2
+THIS SOFTWARE IS PROVIDED ON AN "AS IS" BASIS, WITHOUT WARRANTIES OF ANY KIND,
+EITHER EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO NON-INFRINGEMENT,
+MERCHANTABILITY OR FIT FOR A PARTICULAR PURPOSE.
+See the Mulan PSL v2 for more details. */
+
+//
+// Created by Wangyunlai on 2023/4/25.
+//
+
+#pragma once
+
+#include <cstring>
+#include <string>
+#include <vector>
+
+#include "common/lang/string.h"
+#include "sql/expr/expression.h"
+#include "sql/parser/parse_defs.h"
+#include "sql/stmt/stmt.h"
+
+struct CreateIndexSqlNode;
+class Table;
+class FieldMeta;
+
+/**
+ * @brief 创建索引的语句
+ * @ingroup Statement
+ */
+class CreateIndexStmt : public Stmt
+{
+public:
+  CreateIndexStmt(Table *table, std::vector<const FieldMeta *> field_metas, const std::string &index_name, int unique,
+      const std::vector<ConditionSqlNode> &parameters)
+      : table_(table), field_metas_(field_metas), index_name_(index_name), unique_(unique)
+  {
+    for (auto &it : parameters) {
+      if (strcmp("TYPE", it.left_expression.front()->name()) == 0) {
+        // donothing
+      } else if ("DISTANCE" == (string(it.left_expression.front()->name())) ||
+                 "distance" == (string(it.left_expression.front()->name()))) {
+        dis_type_ = it.right_expression.front()->name();
+      } else if ("LISTS" == (string(it.left_expression.front()->name())) ||
+                 "lists" == (string(it.left_expression.front()->name()))) {
+        lists_ = std::stoi(it.right_expression.front()->name());
+      } else if ("PROBES" == (string(it.left_expression.front()->name())) ||
+                 "probes" == (string(it.left_expression.front()->name()))) {
+        probes_ = std::stoi(it.right_expression.front()->name());
+      }
+    }
+  }
+
+  virtual ~CreateIndexStmt() = default;
+
+  StmtType type() const override { return StmtType::CREATE_INDEX; }
+
+  Table                         *table() const { return table_; }
+  std::vector<const FieldMeta *> field_meta() const { return field_metas_; }
+  const std::string             &index_name() const { return index_name_; }
+  int                            unique() const { return unique_; }
+  string                         dis_type() { return dis_type_; }
+  int                            lists() { return lists_; }
+  int                            probes() { return probes_; }
+
+public:
+  static RC create(Db *db, const CreateIndexSqlNode &create_index, Stmt *&stmt);
+
+private:
+  Table                         *table_ = nullptr;
+  std::vector<const FieldMeta *> field_metas_;
+  std::string                    index_name_;
+  int                            unique_ = 0;
+  std::string                    dis_type_;
+  int                            lists_;
+  int                            probes_;
+};

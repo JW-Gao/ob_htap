@@ -1,0 +1,172 @@
+/* Copyright (c) 2021 Xie Meiyi(xiemeiyi@hust.edu.cn) and OceanBase and/or its affiliates. All rights reserved.
+miniob is licensed under Mulan PSL v2.
+You can use this software according to the terms and conditions of the Mulan PSL v2.
+You may obtain a copy of Mulan PSL v2 at:
+         http://license.coscl.org.cn/MulanPSL2
+THIS SOFTWARE IS PROVIDED ON AN "AS IS" BASIS, WITHOUT WARRANTIES OF ANY KIND,
+EITHER EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO NON-INFRINGEMENT,
+MERCHANTABILITY OR FIT FOR A PARTICULAR PURPOSE.
+See the Mulan PSL v2 for more details. */
+
+//
+// Created by Meiyi & Wangyunlai on 2021/5/12.
+//
+
+#pragma once
+
+
+#include "storage/table/table_meta.h"
+#include "common/types.h"
+#include "common/lang/span.h"
+#include "common/lang/functional.h"
+#include "storage/text/text_manager.h"
+#include "sled_db.h"
+#include <memory>
+
+struct RID;
+class Record;
+class DiskBufferPool;
+class RecordFileHandler;
+class RecordFileScanner;
+class ChunkFileScanner;
+class ConditionFilter;
+class DefaultConditionFilter;
+class Index;
+class IndexScanner;
+class RecordDeleter;
+class Trx;
+class Db;
+class View;
+class SubSelectExpr;
+class FunctionExpr;
+
+/**
+ * @brief 表
+ *
+ */
+class Table
+{
+public:
+  Table() = default;
+  ~Table();
+
+  /**
+   * 创建一个表
+   * @param path 元数据保存的文件(完整路径)
+   * @param name 表名
+   * @param base_dir 表数据存放的路径
+   * @param attribute_count 字段个数
+   * @param attributes 字段
+   */
+  RC create(Db *db, int32_t table_id, const char *path, const char *name, const char *base_dir,
+      span<const AttrInfoSqlNode> attributes, StorageFormat storage_format);
+
+  // 创建虚拟表，封装视图
+  RC create(Db *db, int32_t table_id, View *view);
+
+  RC drop();
+  /**
+   * 打开一个表
+   * @param meta_file 保存表元数据的文件完整路径
+   * @param base_dir 表所在的文件夹，表记录数据文件、索引数据文件存放位置
+   */
+  RC open(Db *db, const char *meta_file, const char *base_dir);
+
+  /**
+   * @brief 根据给定的字段生成一个记录/行
+   * @details 通常是由用户传过来的字段，按照schema信息组装成一个record。
+   * @param value_num 字段的个数
+   * @param values    每个字段的值
+   * @param record    生成的记录数据
+   */
+  RC make_record(int value_num, const Value *values, Record &record);
+
+  /**
+   * @brief 为一个记录编码key，编码格式t{tid}_r{row_id}
+   * @param table_id 表id
+   */
+  std::string record_encode_key(int table_id, Record &record);
+
+  /**
+   * @brief 在当前的表中插入一条记录
+   * @details 在表文件和索引中插入关联数据。这里只管在表中插入数据，不关心事务相关操作。
+   * @param record[in/out] 传入的数据包含具体的数据，插入成功会通过此字段返回RID
+   */
+  RC insert_record(Record &record);
+  RC delete_record(const Record &record);
+  RC delete_record(const RID &rid);
+  RC update_record(Record &record, char *new_record_data, int new_record_len);
+  RC get_record(const RID &rid, Record &record);
+
+  RC recover_insert_record(Record &record);
+
+  // TODO refactor
+  RC create_index(Trx *trx, std::vector<const FieldMeta *> field_meta, const char *index_name, int unique);
+
+  RC create_index(Trx *trx, std::vector<const FieldMeta *> field_meta, const char *index_name, int unique,
+      string dis_type_, int lists_, int probes_);
+
+  RC get_record_scanner(RecordFileScanner &scanner, Trx *trx, ReadWriteMode mode);
+
+  RC get_chunk_scanner(ChunkFileScanner &scanner, Trx *trx, ReadWriteMode mode);
+
+  RecordFileHandler *record_handler() const { return record_handler_; }
+
+  TextFileHandler *text_file_handler() const { return text_file_handler_; }
+
+  TextFileHandler *vector_handler() const { return vector_handler_; }
+  /**
+   * @brief 可以在页面锁保护的情况下访问记录
+   * @details 当前是在事务中访问记录，为了提供一个“原子性”的访问模式
+   * @param rid
+   * @param visitor
+   * @return RC
+   */
+  RC visit_record(const RID &rid, function<bool(Record &)> visitor);
+
+public:
+  int32_t     table_id() const { return table_meta_.table_id(); }
+  const char *name() const;
+
+  Db *db() const { return db_; }
+
+  DiskBufferPool *data_buffer_pool() { return data_buffer_pool_; }
+
+  const TableMeta &table_meta() const;
+
+  RC sync();
+
+private:
+  RC insert_entry_of_indexes(Record &record, const RID &rid);
+  RC delete_entry_of_indexes(const char *record, const RID &rid, bool error_on_not_exists);
+  RC update_entry_of_indexes(const char *record, const char *new_record, const RID &rid);
+  RC set_value_to_record(char *record_data, const Value &value, const FieldMeta *field, const int record_len);
+
+private:
+  RC init_record_handler(const char *base_dir);
+  RC init_text_handler(const char *base_dir);
+  RC init_vector_handler(const char *base_dir);
+
+public:
+  Index *find_index(const char *index_name) const;
+  Index *find_index_by_field(const char *field_name) const;
+
+public:
+  bool  is_view() const { return view_ != nullptr; }
+  View *view() { return view_; }
+
+private:
+  Db                *db_ = nullptr;
+  string             base_dir_;
+  TableMeta          table_meta_;
+  DiskBufferPool    *data_buffer_pool_  = nullptr;  /// 数据文件关联的buffer pool
+  RecordFileHandler *record_handler_    = nullptr;  /// 记录操作
+  TextFileHandler   *text_file_handler_ = nullptr;
+  DiskBufferPool    *text_buffer_pool_  = nullptr;
+  TextFileHandler   *vector_handler_   = nullptr;
+  DiskBufferPool    *vector_buffer_pool_ = nullptr;
+  vector<Index *>    indexes_;
+  View              *view_ = nullptr;  // 因为sql执行过程中，都是以table的形式查询，所以将View封装为一个虚拟表，由table对外提供接口
+
+  // std::shared_ptr<SledDB> sled_kv_engine_;
+};
