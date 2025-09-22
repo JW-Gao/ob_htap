@@ -100,15 +100,15 @@ RC IvfflatIndex::create(
     using DistanceAndRID = std::pair<float, RID>;
     std::priority_queue<DistanceAndRID, std::vector<DistanceAndRID>, CompareDistanceAndRID> closest_queue;
 
-#pragma omp parallel for
+// #pragma omp parallel for
     for (int i = 0; i < cluster_ids.size(); i++) {
-#pragma omp parallel for
+// #pragma omp parallel for
       for (const auto &rid : inverted_list[cluster_ids[i]]) {
         // table_->get_record(rid, record);
         float dist = euclidean_distance(query, rid.second.data(), dim_, type_);
 
 // 如果小顶堆的大小小于 limit，直接插入
-#pragma omp critical
+// #pragma omp critical
         if (closest_queue.size() < limit) {
           closest_queue.emplace(dist, rid.first);
         } else {

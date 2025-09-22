@@ -176,3 +176,9 @@ main "$@"
 
 # cmake .. -DCMAKE_BUILD_TYPE=RelWithDebInfo -DDEBUG=OFF -DUSE_SLED=ON -DCMAKE_EXPORT_COMPILE_COMMANDS=ON
 # cmake .. -DCMAKE_BUILD_TYPE=Debug -DDEBUG=ON -DUSE_SLED=ON -DCMAKE_EXPORT_COMPILE_COMMANDS=ON
+
+# original test compile command
+# cmake .. -DCMAKE_BUILD_TYPE=Debug -DDEBUG=ON -DCONCURRENCY=ON -DWITH_UNIT_TESTS=ON -DWITH_BENCHMARK=ON -DENABLE_ASAN=OFF -DWITH_MEMTRACER=ON 
+
+
+# sysbench ./miniob_insert.lua --threads=24 --tables=2 --table-size=100000 --report-interval=1 --time=60 --db-driver=mysql --mysql-host=127.0.0.1 --mysql-port=6789 prepare

@@ -168,9 +168,7 @@ function create_table(drv, con, table_num)
    query = string.format([[
 CREATE TABLE sbtest%d(
   k INT,
-  f FLOAT,
-  c CHAR(120),
-  pad CHAR(60) 
+  f FLOAT
 ) %s]],
       table_num,
       sysbench.opt.create_table_options)
@@ -197,9 +195,9 @@ CREATE TABLE sbtest%d(
       pad_val = get_pad_value()
       f_val = get_f_value()
 
-      insert_sql = string.format("%s(%d, %f, '%s', '%s')",
+      insert_sql = string.format("%s(%d, %f)",
                               query, sysbench.rand.default(1, sysbench.opt.table_size),
-                              f_val, c_val, pad_val)    
+                              f_val)    
       con:query(insert_sql)
 
       -- con:bulk_insert_next(query)

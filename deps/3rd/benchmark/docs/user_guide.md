@@ -843,7 +843,7 @@ CPU usage of the process, by all the threads.
 void callee(int i);
 
 static void MyMain(int size) {
-#pragma omp parallel for
+// #pragma omp parallel for
   for(int i = 0; i < size; i++)
     callee(i);
 }

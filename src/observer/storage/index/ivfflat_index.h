@@ -60,7 +60,7 @@ inline float euclidean_distance(const float *a, const float *b, int size, dis_ty
     case l2_: {
 
       // 这个并行实际是无效的，没开起来
-#pragma omp parallel for reduction(+ : dist)
+// #pragma omp parallel for reduction(+ : dist)
       for (size_t i = 0; i < size; ++i) {
         float diff = a[i] - b[i];
         dist += diff * diff;
@@ -131,12 +131,12 @@ public:
     using Pair = std::pair<float, int>;  // first: 距离, second: 簇索引
     std::priority_queue<Pair> closest_clusters;
 
-#pragma omp parallel for
+// #pragma omp parallel for
     for (size_t i = 0; i < centroids.size(); ++i) {
       float dist = euclidean_distance(vector, centroids[i].data(), dim_, type);
 
       // 如果堆未满或当前距离比堆中的最大距离小
-#pragma omp parallel critical
+// #pragma omp critical
       if (closest_clusters.size() < probes || dist < closest_clusters.top().first) {
         closest_clusters.push({dist, i});
         // 保证堆的大小最多为 probes
